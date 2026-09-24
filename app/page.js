@@ -3,11 +3,20 @@
 import { useEffect, useState } from "react";
 import { hourKey, msUntilNextHour, supabase } from "../lib/supabase";
 
-const FALLBACK = {
-  kicker: "House dispatch",
-  title: "The press is warming",
-  body: "If no public note is ready for this hour, Wick prints a quiet dispatch of its own. Come back when the clock turns. Leave something if you like.",
-};
+const HOUSE = [
+  { title: "The lamp is still on", body: "This room keeps a single hour at a time. Leave a note if you want. Mark it public and it goes on the wall." },
+  { title: "Paper that does not rush", body: "Most sites shout. Wick waits for the clock. If you wrote something last hour, it is still on your desk. If you marked it public, it is already on the wall." },
+  { title: "A quiet turn", body: "The press does not ask for a feed. It asks for one slip. Title, body, a choice: keep it or pin it." },
+  { title: "Rain on the skylight", body: "Some hours have no public note. Those hours belong to the house. Come back when you have a sentence that can stand alone." },
+  { title: "Ink before the bell", body: "Whatever you save is yours. The wall only shows what you marked public. That is the whole contract." },
+  { title: "Hold the hour", body: "There is a countdown in the corner. When it dies the edition changes. Nothing else on the page needs to move that fast." },
+];
+
+function houseFor(key) {
+  let n = 0;
+  for (let i = 0; i < key.length; i++) n = (n + key.charCodeAt(i) * (i + 3)) % HOUSE.length;
+  return { ...HOUSE[n], kicker: "House dispatch", hour_key: key };
+}
 
 export default function Home() {
   const [feat, setFeat] = useState(null);
@@ -20,7 +29,7 @@ export default function Home() {
       const key = hourKey();
       const { data } = await supabase.from("wick_hours").select("*").eq("hour_key", key).maybeSingle();
       if (!alive) return;
-      setFeat(data || { ...FALLBACK, hour_key: key });
+      setFeat(data || houseFor(key));
     }
     load();
     const id = setInterval(() => {
@@ -43,9 +52,7 @@ export default function Home() {
         <div>
           <div className="kicker">{feat?.kicker || "This hour"}</div>
           <h1>{feat?.title || "Wick"}</h1>
-          <p className="lede">
-            A small press. One edition an hour. Anything you mark public lives on the wall.
-          </p>
+          <p className="lede">A small press. One edition an hour. Anything you mark public lives on the wall.</p>
         </div>
         <aside className="clock">
           <div className="n">{left || "—"}</div>
@@ -54,7 +61,7 @@ export default function Home() {
       </section>
       <article className="feature">
         <p className="kicker">{feat?.hour_key || ""}</p>
-        <div className="body">{feat?.body || FALLBACK.body}</div>
+        <div className="body">{feat?.body}</div>
       </article>
     </main>
   );
